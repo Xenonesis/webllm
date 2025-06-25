@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/themes/prism-tomorrow.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/enhancements.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
+    <style>
+        /* Settings Modal Modernization */
+        #settings-modal {
+            backdrop-filter: blur(6px) brightness(0.7);
+            -webkit-backdrop-filter: blur(6px) brightness(0.7);
+            transition: background 0.3s;
+        }
+        #settings-modal .modal-content {
+            animation: modalIn 0.35s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            border-radius: 1.25rem;
+            border: 1.5px solid #3b82f6;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        #settings-modal input[type="text"] {
+            border: 1.5px solid #d1d5db;
+            background: #f3f4f6;
+            transition: border 0.2s, box-shadow 0.2s;
+            font-size: 1.08rem;
+            border-radius: 0.75rem;
+        }
+        #settings-modal input[type="text"]:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px #6366f133;
+            outline: none;
+        }
+        #settings-modal label {
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        #settings-modal .modal-content button[type="submit"] {
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            box-shadow: 0 2px 8px 0 rgba(99,102,241,0.08);
+            font-size: 1.08rem;
+            padding: 0.7rem 2.2rem;
+        }
+        #settings-modal .modal-content button[type="submit"]:active {
+            transform: scale(0.97);
+        }
+        #settings-modal .modal-content button#close-settings {
+            transition: color 0.2s, background 0.2s;
+            border-radius: 50%;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        #settings-modal .modal-content button#close-settings:focus {
+            outline: 2px solid #6366f1;
+        }
+        #settings-modal .modal-content h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.01em;
+        }
+        #settings-modal .modal-content form {
+            margin-top: 0.5rem;
+        }
+        #settings-modal .modal-content .flex.justify-end {
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 480px) {
+            #settings-modal .modal-content {
+                padding: 1.2rem;
+                max-width: 98vw;
+            }
+            #settings-modal input[type="text"] {
+                font-size: 1rem;
+            }
+            #settings-modal .modal-content h2 {
+                font-size: 1.3rem;
+            }
+        }
+        /* General background and contrast improvements */
+        body {
+            background: linear-gradient(135deg, #181c24 0%, #23272f 100%);
+        }
+        .container {
+            background: rgba(255,255,255,0.01);
+            border-radius: 18px;
+            box-shadow: 0 2px 16px 0 rgba(0,0,0,0.10);
+        }
+        header {
+            background: rgba(255,255,255,0.04);
+            border-radius: 18px;
+            box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+        }
+        .chat-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+        }
+        .input-container {
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+        }
+        /* Modern select styling */
+        #model-selector {
+            border-radius: 10px;
+            border: 1.5px solid #3b82f6;
+            background: #fff;
+            color: #23272f;
+            font-weight: 500;
+            box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        #model-selector:focus {
+            border: 1.5px solid #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .dark #model-selector {
+            background: #23272f !important;
+            color: #f9fafb !important;
+            border: 1.5px solid #3b82f6 !important;
+        }
+        .dark #model-selector:focus {
+            border: 1.5px solid #60a5fa !important;
+            box-shadow: 0 0 0 2px #2563eb !important;
+        }
+        /* Tab and button improvements */
+        .btn, .tab-active {
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.01em;
+            box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+        }
+        #dark-mode-toggle {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            min-height: 38px;
+            max-width: 38px;
+            max-height: 38px;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #dark-mode-toggle i {
+            font-size: 1.15rem !important;
+        }
+        @media (max-width: 640px) {
+            #dark-mode-toggle {
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+                min-height: 32px;
+                max-width: 32px;
+                max-height: 32px;
+            }
+            #dark-mode-toggle i {
+                font-size: 1rem !important;
+            }
+        }
+        }
+        .btn {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+        }
+        .btn:hover, .tab-active {
+            background: #2563eb !important;
+            color: #fff !important;
+        }
+        .dark .btn, .dark .tab-active {
+            background: #6366f1 !important;
+            color: #fff !important;
+        }
+        .dark .btn:hover, .dark .tab-active {
+            background: #4338ca !important;
+        }
+        /* Chat message improvements */
+        .user-message {
+            background: linear-gradient(90deg, #3b82f6 60%, #2563eb 100%);
+            color: #fff;
+            border-radius: 18px 4px 18px 18px;
+            box-shadow: var(--shadow-sm);
+        }
+        .ai-message {
+            background: linear-gradient(90deg, #e2e8f0 60%, #f9fafb 100%);
+            color: #23272f;
+            border-radius: 4px 18px 18px 18px;
+            box-shadow: var(--shadow-sm);
+        }
+        .dark .ai-message {
+            background: linear-gradient(90deg, #23272f 60%, #181c24 100%);
+            color: #f9fafb;
+        }
+        /* Input improvements */
+        textarea, input[type="text"] {
+            border-radius: 10px;
+            border: 1.5px solid #3b82f6;
+            background: #f9fafb;
+            color: #23272f;
+            font-size: 1.05rem;
+            padding: 0.75rem 1rem;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        textarea:focus, input[type="text"]:focus {
+            border: 1.5px solid #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .dark textarea, .dark input[type="text"] {
+            background: #23272f;
+            color: #f9fafb;
+            border: 1.5px solid #3b82f6;
+        }
+        .dark textarea:focus, .dark input[type="text"]:focus {
+            border: 1.5px solid #60a5fa;
+            box-shadow: 0 0 0 2px #2563eb;
+        }
+        /* Footer improvement */
+        footer {
+            opacity: 0.85;
+            letter-spacing: 0.01em;
+        }
+        /* Mobile responsive container and layout */
+        @media (max-width: 640px) {
+            .container {
+                padding: 0.25rem !important;
+                max-width: 100vw !important;
+            }
+            header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 0.75rem 0.5rem 0.5rem 0.5rem !important;
+                gap: 0.5rem !important;
+            }
+            header h1 {
+                font-size: 1.5rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            header p {
+                font-size: 1rem !important;
+            }
+            header .flex.items-center.space-x-4 {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 0.5rem !important;
+                width: 100%;
+            }
+            header .flex.items-center {
+                width: 100%;
+                justify-content: flex-start !important;
+            }
+            #model-selector {
+                width: 100% !important;
+                max-width: 100vw !important;
+                font-size: 1.05rem !important;
+                margin-top: 0.25rem !important;
+            }
+            .chat-container {
+                height: 40vh !important;
+                padding: 0.5rem 0.25rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            .input-container {
+                flex-direction: column !important;
+                padding: 0.5rem 0.25rem !important;
+                gap: 0.5rem !important;
+            }
+            .tab-active, .btn {
+                font-size: 1.05rem !important;
+                padding: 0.75rem 0.25rem !important;
+                min-width: 0 !important;
+            }
+            .bg-white.shadow-md.rounded-lg.mb-4.p-2.flex.transition-all {
+                flex-direction: column !important;
+                gap: 0.5rem !important;
+                padding: 0.5rem 0.25rem !important;
+            }
+            .message-container {
+                padding: 0.5rem !important;
+                font-size: 1rem !important;
+            }
+            textarea, input, select, button {
+                font-size: 1.05rem !important;
+            }
+            .file-upload-container {
+                padding: 0.5rem 0.25rem !important;
+            }
+            #image-preview {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+            #text-input-container, #image-input-container, #vision-input-container {
+                margin-bottom: 0.5rem !important;
+            }
+            #generate, #generate-image, #analyze-image {
+                width: 100% !important;
+                min-width: 0 !important;
+                padding: 0.85rem 0 !important;
+                font-size: 1.1rem !important;
+            }
+            .flex.justify-center.mt-4.px-2.mb-4 {
+                margin-top: 0.5rem !important;
+                margin-bottom: 0.5rem !important;
+                padding: 0 0.25rem !important;
+            }
+            footer {
+                font-size: 0.95rem !important;
+                padding-bottom: 2rem !important;
+            }
+        }
+        }
+        /* Responsive scrollable dropdown for model selector */
+        #model-selector {
+            max-height: 160px;
+            overflow-y: auto;
+            max-width: 100%;
+            min-width: 120px;
+        }
+        @media (max-width: 640px) {
+            #model-selector {
+                font-size: 0.95rem;
+                min-width: 0;
+                width: 100%;
+                max-width: 180px;
+            }
+        }
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #e2e8f0;
+            --background-light: #f9fafb;
+            --background-dark: #111827;
+            --text-light: #1f2937;
+            --text-dark: #f9fafb;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Core styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background-color: var(--background-light);
+            color: var(--text-light);
+        }
+        
+        body.dark {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+        
+        /* Enhanced chat styles */
+        .chat-container {
+            height: 55vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 640px) {
+            .chat-container {
+                height: 50vh;
+                margin-left: -1rem;
+                margin-right: -1rem;
+                border-radius: 0;
+            }
+        }
+        
+        .message-container {
+            max-width: 85%;
+            margin: 0.5rem 0;
+            padding: 1rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        @media (max-width: 640px) {
+            .message-container {
+                max-width: 95%;
+                padding: 0.75rem;
+                margin: 0.25rem 0;
+            }
+            
+            .user-message {
+                margin-right: 0.5rem;
+            }
+            
+            .ai-message {
+                margin-left: 0.5rem;
+            }
+        }
+        
+        .message-container:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Input containers */
+        .input-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .dark .input-container {
+            background: var(--gray-800);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Buttons */
+        .btn {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: inherit;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        
+        .btn:hover::after {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 1;
+        }
+        
+        /* Enhanced model badges */
+        .model-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-top: 8px;
+        }
+        
+        /* Dark mode specific */
+        .dark .bg-white {
+            background-color: var(--gray-800) !important;
+        }
+        
+        .dark select,
+        .dark #model-selector {
+            background-color: #23272f !important;
+            color: #f9fafb !important;
+            border-color: #4b5563 !important;
+        }
+        .dark select option,
+        .dark #model-selector option {
+            background-color: #23272f !important;
+            color: #f9fafb !important;
+        }
+        .dark select option:checked,
+        .dark #model-selector option:checked {
+            background-color: var(--primary-dark) !important;
+            color: #fff !important;
+        }
+        
+        /* Responsive design improvements */
+        @media (max-width: 640px) {
+            .message-container {
+                max-width: 95%;
+            }
+            
+            .model-badge {
+                font-size: 0.65rem;
+                padding: 3px 8px;
+            }
+        }
+
+        /* Message bubbles with improved styling */
+        .user-message {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 18px 4px 18px 18px;
+            box-shadow: var(--shadow-sm);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .ai-message {
+            background: var(--secondary-color);
+            border-radius: 4px 18px 18px 18px;
+            box-shadow: var(--shadow-sm);
+            animation: slideInLeft 0.3s ease;
+        }
+
+        .dark .ai-message {
+            background: var(--gray-700);
+            color: var(--text-dark);
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Enhanced input styling */
+        textarea {
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        /* Button hover effects */
+        .btn {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Loading animation */
+        .loading-dots span {
+            animation: pulse 1.4s infinite;
+            background: var(--primary-color);
+        }
+
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Model badges */
+        .model-badge {
+            padding: 4px 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            margin-top: 6px;
+        }
+
+        .model-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Enhanced dark mode */
+        .dark .bg-white {
+            background-color: var(--background-dark) !important;
+        }
+
+        .dark .border-gray-300 {
+            border-color: var(--gray-700) !important;
+        }
+
+        .dark select, .dark textarea {
+            background-color: var(--gray-800);
+            border-color: var(--gray-700);
+            color: var(--text-dark);
+        }
+
+        .dark select:focus, .dark textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* Image preview enhancements */
+        .image-preview {
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Tabs styling */
+        .tab-active {
+            position: relative;
+            font-weight: 600;
+        }
+
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-color);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        /* Claude 3.5 specific styling */
+        .badge-claude {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        
+        .claude-message {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        }
+        
+        /* Streaming animation for Claude */
+        @keyframes typing {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        
+        .claude-typing {
+            animation: typing 1.4s infinite;
+        }
+
+        /* Claude chat specific styles */
+        .claude-message {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .claude-badge {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .claude-typing {
+            display: inline-block;
+            margin-left: 4px;
+            animation: typing 1.4s infinite;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden" aria-modal="true" role="dialog">
+        <div class="modal-content bg-white dark:bg-gray-800 p-6 w-full max-w-md relative">
+            <button id="close-settings" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Close settings">&times;</button>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100 tracking-tight">API Keys</h2>
+            <form id="api-keys-form" class="space-y-5">
+                <div>
+                    <label for="api-key-gemini" class="block text-base font-medium text-gray-700 dark:text-gray-200 mb-1">Gemini API Key</label>
+                    <input type="text" id="api-key-gemini" name="gemini" class="w-full border px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100" autocomplete="off" placeholder="Paste your Gemini API key here" />
+                </div>
+                <div>
+                    <label for="api-key-openai" class="block text-base font-medium text-gray-700 dark:text-gray-200 mb-1">OpenAI API Key</label>
+                    <input type="text" id="api-key-openai" name="openai" class="w-full border px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100" autocomplete="off" placeholder="Paste your OpenAI API key here" />
+                </div>
+                <div>
+                    <label for="api-key-claude" class="block text-base font-medium text-gray-700 dark:text-gray-200 mb-1">Claude API Key</label>
+                    <input type="text" id="api-key-claude" name="claude" class="w-full border px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100" autocomplete="off" placeholder="Paste your Claude API key here" />
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 max-w-4xl">
+        <!-- Header -->
+        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center transition-all">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-600">AI Assistant</h1>
+                <p class="text-sm text-gray-500">Powered by Multiple AI Models</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="dark-mode-toggle" class="p-2 rounded-full bg-gray-200 text-gray-700 btn" title="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="flex items-center">
+                    <span class="mr-2 text-sm text-gray-700 dark:text-gray-300">Model:</span>
+                    <select id="model-selector" class="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm text-gray-800 dark:text-gray-200" title="Select AI model">
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mode Tabs -->
+        <div class="bg-white shadow-md rounded-lg mb-4 p-2 flex transition-all">
+            <button id="text-mode-tab" class="flex-1 p-2 text-center tab-active btn" data-mode="text">
+                <i class="fas fa-comment mr-2"></i> Text
+            </button>
+            <button id="image-mode-tab" class="flex-1 p-2 text-center btn" data-mode="image">
+                <i class="fas fa-image mr-2"></i> Generate Image
+            </button>
+            <button id="vision-mode-tab" class="flex-1 p-2 text-center btn" data-mode="vision">
+                <i class="fas fa-eye mr-2"></i> Analyze Image
+            </button>
+            <!-- Settings Button -->
+            <button id="open-settings" class="ml-auto text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors text-xl" title="Settings">
+                <i class="fas fa-gear"></i>
+            </button>
+        </div>
+
+        <!-- Chat container -->
+        <div id="chat-container" class="bg-white shadow-md rounded-lg p-4 mb-4 chat-container transition-all">
+            <div class="flex justify-center items-center h-full text-gray-400" id="empty-state">
+                <div class="text-center">
+                    <i class="fas fa-robot text-5xl mb-2"></i>
+                    <p>Ask me anything...</p>
+                </div>
+            </div>
+            <div id="chat-messages"></div>
+        </div>
+
+        <!-- Input form for text -->
+        <div id="text-input-container" class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex transition-colors input-container">
+            <textarea id="prompt" class="flex-grow border rounded-md p-2 mr-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 transition-colors" 
+                      placeholder="Type your message here..." rows="2"></textarea>
+            <button id="generate"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition duration-200 btn"
+                    style="min-width: 120px; touch-action: manipulation;">
+                <span>Send</span>
+                <i class="fas fa-paper-plane ml-1"></i>
+            </button>
+        </div>
+        
+        <!-- Input form for image generation -->
+        <div id="image-input-container" class="hidden bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex flex-col transition-colors input-container">
+            <textarea id="image-prompt" class="flex-grow border rounded-md p-2 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 transition-colors" 
+                      placeholder="Describe the image you want to generate..." rows="3"></textarea>
+            <button id="generate-image" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 self-end btn">
+                <span>Generate Image</span>
+                <i class="fas fa-paint-brush ml-1"></i>
+            </button>
+        </div>
+        
+        <!-- Input form for image analysis -->
+        <div id="vision-input-container" class="hidden bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 flex flex-col transition-colors input-container">
+            <div class="file-upload-container relative overflow-hidden p-6 rounded-lg mb-3">
+                <div class="flex flex-col items-center">
+                    <label class="mb-4 text-sm font-medium">Upload an image to analyze:</label>
+                    <div class="flex items-center">
+                        <input type="file" id="image-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Upload image" placeholder="Select an image file">
+                        <button id="upload-button" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 p-3 rounded-md transition-colors btn"
+                                style="min-width: 140px; touch-action: manipulation;">
+                            <i class="fas fa-upload mr-1"></i> Choose File
+                        </button>
+                        <span id="file-name" class="ml-2 text-sm text-gray-500 dark:text-gray-400">No file chosen</span>
+                    </div>
+                    <div id="image-preview-container" class="mt-4 hidden relative">
+                        <img id="image-preview" class="max-h-40 rounded-md image-preview" src="" alt="Preview">
+                        <div class="image-preview-actions">
+                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100" title="Zoom In">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <textarea id="vision-prompt" class="flex-grow border rounded-md p-2 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 transition-colors" 
+                      placeholder="What would you like to know about this image? (Optional)" rows="2"></textarea>
+            <button id="analyze-image" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 self-end disabled:bg-gray-400 disabled:cursor-not-allowed btn">
+                <span>Analyze Image</span>
+                <i class="fas fa-search ml-1"></i>
+            </button>
+        </div>
+        
+        <div class="flex justify-center mt-4 px-2 mb-4">
+            <button id="clear-chat" class="text-sm text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors btn" aria-label="Clear chat history">
+                <i class="fas fa-trash mr-1"></i> Clear Chat
+            </button>
+        </div>
+        
+        <footer class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400 transition-colors">
+            <p>© 2024 AI Assistant. Built with Flask & Tailwind CSS</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Settings Modal Elements
+            const openSettingsBtn = document.getElementById('open-settings');
+            const closeSettingsBtn = document.getElementById('close-settings');
+            const settingsModal = document.getElementById('settings-modal');
+            const apiKeysForm = document.getElementById('api-keys-form');
+            const apiKeyInputs = {
+                gemini: document.getElementById('api-key-gemini'),
+                openai: document.getElementById('api-key-openai'),
+                claude: document.getElementById('api-key-claude')
+            };
+
+            // Open/close modal
+            openSettingsBtn.addEventListener('click', () => {
+                // Load saved keys
+                Object.keys(apiKeyInputs).forEach(key => {
+                    apiKeyInputs[key].value = localStorage.getItem('apiKey_' + key) || '';
+                });
+                settingsModal.classList.remove('hidden');
+            });
+            closeSettingsBtn.addEventListener('click', () => {
+                settingsModal.classList.add('hidden');
+            });
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) settingsModal.classList.add('hidden');
+            });
+
+            // Save API keys
+            apiKeysForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                Object.keys(apiKeyInputs).forEach(key => {
+                    localStorage.setItem('apiKey_' + key, apiKeyInputs[key].value.trim());
+                });
+                settingsModal.classList.add('hidden');
+            });
+            // Core Elements
+            const chatContainer = document.getElementById('chat-container');
+            const chatMessages = document.getElementById('chat-messages');
+            const emptyState = document.getElementById('empty-state');
+            const prompt = document.getElementById('prompt');
+            const generateBtn = document.getElementById('generate');
+            const modelSelector = document.getElementById('model-selector');
+            const clearChatBtn = document.getElementById('clear-chat');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            
+            // Mode Tabs
+            const textModeTab = document.getElementById('text-mode-tab');
+            const imageModeTab = document.getElementById('image-mode-tab');
+            const visionModeTab = document.getElementById('vision-mode-tab');
+            
+            // Input Containers
+            const textInputContainer = document.getElementById('text-input-container');
+            const imageInputContainer = document.getElementById('image-input-container');
+            const visionInputContainer = document.getElementById('vision-input-container');
+            
+            // Image Generation Elements
+            const imagePrompt = document.getElementById('image-prompt');
+            const generateImageBtn = document.getElementById('generate-image');
+            
+            // Image Analysis Elements
+            const imageUpload = document.getElementById('image-upload');
+            const uploadButton = document.getElementById('upload-button');
+            const fileName = document.getElementById('file-name');
+            const imagePreview = document.getElementById('image-preview');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const visionPrompt = document.getElementById('vision-prompt');
+            const analyzeImageBtn = document.getElementById('analyze-image');
+            
+            let isLoading = false;
+            let currentMode = 'text';
+            let uploadedImage = null;
+            
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true' || 
+                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('darkMode'))) {
+                document.body.classList.add('dark');
+            }
+
+            // Set correct icon on load
+            function updateDarkModeIcon() {
+                if (document.body.classList.contains('dark')) {
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                } else {
+                    darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                }
+            }
+
+            // Ensure all UI elements update for dark/light mode
+            function handleDarkModeChange() {
+                updateDarkModeIcon();
+                applyDarkMode(document.body.classList.contains('dark'));
+            }
+
+            handleDarkModeChange();
+
+            // Dark Mode Toggle
+            darkModeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+                handleDarkModeChange();
+            });
+            
+            // Mode Switching
+            [textModeTab, imageModeTab, visionModeTab].forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const mode = this.dataset.mode;
+                    setActiveMode(mode);
+                });
+            });
+            
+            function setActiveMode(mode) {
+                currentMode = mode;
+                
+                // Remove active class from all tabs
+                [textModeTab, imageModeTab, visionModeTab].forEach(tab => {
+                    tab.classList.remove('tab-active');
+                });
+                
+                // Hide all input containers
+                textInputContainer.classList.add('hidden');
+                imageInputContainer.classList.add('hidden');
+                visionInputContainer.classList.add('hidden');
+                
+                // Set active tab and show corresponding input container
+                if (mode === 'text') {
+                    textModeTab.classList.add('tab-active');
+                    textInputContainer.classList.remove('hidden');
+                } else if (mode === 'image') {
+                    imageModeTab.classList.add('tab-active');
+                    imageInputContainer.classList.remove('hidden');
+                } else if (mode === 'vision') {
+                    visionModeTab.classList.add('tab-active');
+                    visionInputContainer.classList.remove('hidden');
+                }
+            }
+            
+            // Image Upload
+            uploadButton.addEventListener('click', () => {
+                imageUpload.click();
+            });
+            
+            imageUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    fileName.textContent = file.name;
+                    
+                    // Preview image
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedImage = event.target.result;
+                        imagePreview.src = uploadedImage;
+                        imagePreviewContainer.classList.remove('hidden');
+                        analyzeImageBtn.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    fileName.textContent = "No file chosen";
+                    imagePreviewContainer.classList.add('hidden');
+                    analyzeImageBtn.disabled = true;
+                    uploadedImage = null;
+                }
+            });
+            
+            // Image Analysis
+            analyzeImageBtn.addEventListener('click', () => {
+                if (!uploadedImage) return;
+                // Hide empty state
+                emptyState.style.display = 'none';
+                // Add user message with image
+                addImageMessage(uploadedImage, 'user');
+                // Get prompt if any
+                const userPrompt = visionPrompt.value.trim();
+                if (userPrompt) {
+                    addMessage(`Question: ${userPrompt}`, 'user');
+                }
+                // Show loading indicator
+                isLoading = true;
+                const loadingId = addLoadingMessage();
+                // Get API key for selected model if needed (example: Gemini)
+                let apiKey = localStorage.getItem('apiKey_gemini') || '';
+                fetch('/api/analyze-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(apiKey ? { 'X-API-Key': apiKey } : {})
+                    },
+                    body: JSON.stringify({
+                        image: uploadedImage,
+                        prompt: userPrompt || "Describe this image in detail"
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading indicator
+                    removeLoadingMessage(loadingId);
+                    // Add AI response
+                    addMessage(data.response, 'ai', data.model);
+                    // Reset the form
+                    visionPrompt.value = '';
+                    fileName.textContent = "No file chosen";
+                    imagePreviewContainer.classList.add('hidden');
+                    analyzeImageBtn.disabled = true;
+                    uploadedImage = null;
+                })
+                .catch(error => {
+                    removeLoadingMessage(loadingId);
+                    addMessage('Error analyzing image. Please try again.', 'system');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    isLoading = false;
+                });
+            });
+            
+            // Image Generation
+            generateImageBtn.addEventListener('click', () => {
+                const userPrompt = imagePrompt.value.trim();
+                if (!userPrompt || isLoading) return;
+                // Hide empty state
+                emptyState.style.display = 'none';
+                // Determine best model for image generation
+                let modelForImage = modelSelector.value;
+                // Add user message
+                addMessage(`Generate image: ${userPrompt}`, 'user');
+                // Show loading indicator
+                isLoading = true;
+                const loadingId = addLoadingMessage();
+                // Get API key for selected model
+                let apiKey = localStorage.getItem('apiKey_' + modelForImage) || '';
+                fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(apiKey ? { 'X-API-Key': apiKey } : {})
+                    },
+                    body: JSON.stringify({
+                        prompt: userPrompt,
+                        mode: 'image',
+                        model: modelForImage
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading indicator
+                    removeLoadingMessage(loadingId);
+                    if (data.mode === 'image' && data.response) {
+                        // Add AI response with image
+                        addImageMessage(`data:${data.type};base64,${data.response}`, 'ai', data.model);
+                    } else if (data.isFallback && data.response) {
+                        // Display fallback text description
+                        addMessage(`${data.error}\n\n${data.response}`, 'ai', data.model);
+                    } else {
+                        // Add error message
+                        addMessage(data.error || 'Failed to generate image', 'ai', data.model);
+                    }
+                    // Reset input
+                    imagePrompt.value = '';
+                })
+                .catch(error => {
+                    removeLoadingMessage(loadingId);
+                    addMessage('Error generating image. Please try again.', 'system');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    isLoading = false;
+                });
+            });
+
+            // Clear Chat
+            clearChatBtn.addEventListener('click', function() {
+                chatMessages.innerHTML = '';
+                emptyState.style.display = 'flex';
+            });
+            
+            // Generate text response
+            generateBtn.addEventListener('click', sendMessage);
+            
+            // Also send on Enter (but Shift+Enter for new line)
+            prompt.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            function sendMessage() {
+                if (isLoading) return;
+                const userPrompt = prompt.value.trim();
+                if (!userPrompt) return;
+                // Hide empty state
+                emptyState.style.display = 'none';
+                // Add user message
+                addMessage(userPrompt, 'user');
+                // Clear input
+                prompt.value = '';
+                // Show loading indicator
+                isLoading = true;
+                const loadingId = addLoadingMessage();
+                const selectedModel = modelSelector.value;
+                let apiKey = localStorage.getItem('apiKey_' + selectedModel) || '';
+                if (selectedModel === 'claude') {
+                    // Handle Claude streaming
+                    const eventSource = new EventSource(`/api/stream?prompt=${encodeURIComponent(userPrompt)}`);
+                    let messageContent = '';
+                    eventSource.onmessage = (event) => {
+                        const response = JSON.parse(event.data);
+                        if (response.type === 'content') {
+                            messageContent += response.text;
+                            updateMessage(loadingId, messageContent, 'ai', 'claude');
+                        }
+                    };
+                    eventSource.onerror = () => {
+                        eventSource.close();
+                        isLoading = false;
+                        if (!messageContent) {
+                            addMessage('Error: Could not get a response from Claude. Please try again.', 'system');
+                        }
+                    };
+                    return;
+                }
+                // Regular API call for other models
+                fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(apiKey ? { 'X-API-Key': apiKey } : {})
+                    },
+                    body: JSON.stringify({ prompt: userPrompt, model: selectedModel })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading indicator
+                    removeLoadingMessage(loadingId);
+                    // Add AI response
+                    addMessage(data.response, 'ai', data.model);
+                })
+                .catch(error => {
+                    // Remove loading indicator
+                    removeLoadingMessage(loadingId);
+                    // Add error message
+                    addMessage('Error: Could not get a response. Please try again.', 'system');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    isLoading = false;
+                });
+            }
+            
+            function addMessage(text, sender, model = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+                
+                const contentClass = sender === 'user' 
+                    ? 'user-message'
+                    : sender === 'ai' 
+                        ? 'ai-message' 
+                        : 'system-message';
+                
+                // Enhanced model badge
+                const modelBadge = model ? 
+                    `<div class="model-badge badge-${model.toLowerCase()}">${model.toUpperCase()}</div>` : '';
+                
+                // Process text for markdown if it's from AI
+                let processedText = text;
+                if (sender === 'ai' && window.marked) {
+                    processedText = marked.parse(text);
+                } else {
+                    processedText = text.replace(/\n/g, '<br>');
+                }
+                
+                messageDiv.innerHTML = `
+                    <div class="max-w-3/4 p-3 ${contentClass} message-container">
+                        <div class="message-content">${processedText}</div>
+                        ${modelBadge}
+                    </div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                
+                // Apply syntax highlighting to code blocks
+                if (window.Prism) {
+                    messageDiv.querySelectorAll('pre code').forEach((block) => {
+                        Prism.highlightElement(block);
+                    });
+                }
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                return messageDiv.id;
+            }
+            
+            function addImageMessage(imageUrl, sender, model = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+                
+                const contentClass = sender === 'user' 
+                    ? 'user-message'
+                    : sender === 'ai' 
+                        ? 'ai-message' 
+                        : 'system-message';
+                
+                const modelText = model ? `<div class="text-xs opacity-75 mt-1">${model.toUpperCase()}</div>` : '';
+                
+                messageDiv.innerHTML = `
+                    <div class="max-w-3/4 p-3 ${contentClass} message-container">
+                        <img src="${imageUrl}" alt="Image" class="image-preview">
+                        ${modelText}
+                    </div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                return messageDiv.id;
+            }
+            
+            function addLoadingMessage() {
+                const loadingId = 'loading-' + Date.now();
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = loadingId;
+                loadingDiv.className = 'flex mb-4 justify-start';
+                loadingDiv.innerHTML = `
+                    <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex">
+                        <div class="loading-dots flex items-center">
+                            <span class="h-2 w-2 bg-blue-600 rounded-full inline-block mx-1"></span>
+                            <span class="h-2 w-2 bg-blue-600 rounded-full inline-block mx-1"></span>
+                            <span class="h-2 w-2 bg-blue-600 rounded-full inline-block mx-1"></span>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(loadingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                return loadingId;
+            }
+            
+            function removeLoadingMessage(loadingId) {
+                const loadingDiv = document.getElementById(loadingId);
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+
+            function updateMessage(messageId, text, sender, model) {
+                const messageDiv = document.getElementById(messageId);
+                if (messageDiv) {
+                    messageDiv.className = `flex mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+                    
+                    const contentClass = model === 'claude' ? 'claude-message' : 
+                                       sender === 'user' ? 'user-message' : 
+                                       sender === 'ai' ? 'ai-message' : 
+                                       'system-message';
+                    
+                    messageDiv.innerHTML = `
+                        <div class="max-w-3/4 p-3 ${contentClass} message-container">
+                            <div class="message-content">${marked.parse(text)}</div>
+                            ${model ? `<div class="model-badge badge-${model.toLowerCase()}">${model.toUpperCase()}</div>` : ''}
+                        </div>
+                    `;
+                    
+                    // Apply syntax highlighting
+                    if (window.Prism) {
+                        messageDiv.querySelectorAll('pre code').forEach((block) => {
+                            Prism.highlightElement(block);
+                        });
+                    }
+                }
+            }
+            
+            // Load available models from server (enhanced)
+            function loadAvailableModels() {
+                fetch('/api/available-models')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Available models data:", data);
+                        
+                        // Clear existing options
+                        modelSelector.innerHTML = '';
+                        
+                        // Add available models
+                        data.available_models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            
+                            // Handle disabled models
+                            if (model.disabled) {
+                                option.disabled = true;
+                                option.textContent += " (Not Configured)";
+                                option.classList.add('text-gray-400');
+                            } else {
+                                option.classList.add('font-medium');
+                            }
+                            
+                            modelSelector.appendChild(option);
+                        });
+                        
+                        // Set the current model if it's available
+                        if (data.current_model && !modelSelector.querySelector(`option[value="${data.current_model}"][disabled]`)) {
+                            modelSelector.value = data.current_model;
+                        } else {
+                            // Find first available model
+                            const firstAvailable = modelSelector.querySelector('option:not([disabled])');
+                            if (firstAvailable) {
+                                modelSelector.value = firstAvailable.value;
+                            }
+                        }
+                        
+                        // Log the selected model
+                        console.log("Selected model:", modelSelector.value);
+                    })
+                    .catch(error => {
+                        console.error('Error loading models:', error);
+                        
+                        // Fallback options if API fails
+                        modelSelector.innerHTML = `
+                            <option value="gemini">Gemini</option>
+                            <option value="openai">OpenAI</option>
+                        `;
+                    });
+            }
+            
+            // Call the function to load models
+            loadAvailableModels();
+            
+            // Fix dark mode toggle to properly update dropdown styles
+            function applyDarkMode(isDark) {
+                if (isDark) {
+                    document.body.classList.add('dark');
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    document.querySelectorAll('.input-container').forEach(el => {
+                        el.classList.add('dark-input');
+                    });
+                } else {
+                    document.body.classList.remove('dark');
+                    darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    document.querySelectorAll('.input-container').forEach(el => {
+                        el.classList.remove('dark-input');
+                    });
+                }
+                
+                // Update input styles
+                document.querySelectorAll('textarea, select').forEach(el => {
+                    if (isDark) {
+                        el.classList.add('dark-input');
+                        el.style.backgroundColor = 'var(--gray-700)';
+                        el.style.color = '#e5e7eb';
+                        el.style.borderColor = '#4b5563';
+                    } else {
+                        el.classList.remove('dark-input');
+                        el.style.backgroundColor = 'white';
+                        el.style.color = 'var(--text-light)';
+                        el.style.borderColor = '#e5e7eb';
+                    }
+                });
+            }
+            
+            // Update the model selector styles
+            modelSelector.addEventListener('change', function() {
+                this.style.borderColor = document.body.classList.contains('dark') ? '#4b5563' : '#e5e7eb';
+            });
+            
+            // Apply initial dark mode
+            applyDarkMode(document.body.classList.contains('dark'));
+        });
+    </script>
+</body>
+</html>

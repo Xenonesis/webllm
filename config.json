@@ -1,0 +1,5 @@
+{
+    "openai_api_key": "your_openai_api_key_here",
+    "gemini_api_url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAql2s4WHraUgh-xMtEa2gkEnDm4mgmTXQ",
+    "default_model": "gemini"
+}
