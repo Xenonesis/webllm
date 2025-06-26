@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenAI Compatible Providers</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .provider { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>OpenAI Compatible Providers</h1>
+    
+    <div id="providers"></div>
+    
+    <h2>Add New Provider</h2>
+    <form id="addProviderForm">
+        <div class="form-group">
+            <label>Provider Name:</label>
+            <input type="text" id="providerName" required>
+        </div>
+        <div class="form-group">
+            <label>Base URL:</label>
+            <input type="url" id="baseUrl" placeholder="https://api.example.com/v1" required>
+        </div>
+        <div class="form-group">
+            <label>API Key:</label>
+            <input type="password" id="apiKey" required>
+        </div>
+        <div class="form-group">
+            <label>Models (one per line):</label>
+            <textarea id="models" rows="3" placeholder="gpt-3.5-turbo&#10;gpt-4"></textarea>
+        </div>
+        <button type="submit">Add Provider</button>
+    </form>
+    
+    <div id="message"></div>
+
+    <script>
+        function loadProviders() {
+            fetch('/api/openai-providers')
+                .then(response => response.json())
+                .then(providers => {
+                    const container = document.getElementById('providers');
+                    container.innerHTML = '';
+                    
+                    Object.entries(providers).forEach(([name, config]) => {
+                        const div = document.createElement('div');
+                        div.className = 'provider';
+                        div.innerHTML = `
+                            <h3>${name}</h3>
+                            <p><strong>URL:</strong> ${config.base_url}</p>
+                            <p><strong>Models:</strong> ${config.models.join(', ')}</p>
+                            <button onclick="testProvider('${name}')">Test</button>
+                            <button onclick="deleteProvider('${name}')" style="background: red; color: white;">Delete</button>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+        }
+        
+        function testProvider(name) {
+            fetch('/api/test-provider', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({provider: name})
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage(data.success ? 'Test successful!' : `Test failed: ${data.error}`, data.success);
+            });
+        }
+        
+        function deleteProvider(name) {
+            if (confirm(`Delete provider ${name}?`)) {
+                fetch(`/api/openai-providers/${name}`, {method: 'DELETE'})
+                    .then(response => response.json())
+                    .then(data => {
+                        showMessage(data.success ? 'Provider deleted!' : 'Delete failed!', data.success);
+                        if (data.success) loadProviders();
+                    });
+            }
+        }
+        
+        function showMessage(text, isSuccess) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = isSuccess ? 'success' : 'error';
+            setTimeout(() => msg.textContent = '', 3000);
+        }
+        
+        document.getElementById('addProviderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('providerName').value,
+                base_url: document.getElementById('baseUrl').value,
+                api_key: document.getElementById('apiKey').value,
+                models: document.getElementById('models').value.split('\n').filter(m => m.trim())
+            };
+            
+            fetch('/api/openai-providers', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                showMessage(result.success ? 'Provider added!' : 'Failed to add provider!', result.success);
+                if (result.success) {
+                    this.reset();
+                    loadProviders();
+                }
+            });
+        });
+        
+        loadProviders();
+    </script>
+</body>
+</html>
